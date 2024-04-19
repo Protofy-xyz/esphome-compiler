@@ -17,9 +17,10 @@ type DatePickerProps = {
   placeholder?: string
 }
 
+// the modes 'month' and 'year' use offsetDate and onOffsetChange
+// and 'single', 'multiple', 'range' use selectedDates and onDatesChange
+
 export function DatePicker({ onDatesChange, selectedDates, mode = 'single', config = {}, placeholder, onOffsetChange, offsetDate }: DatePickerProps) {
-  // the modes 'month' and 'year' use offsetDate and onOffsetChange
-  // and 'single', 'multiple', 'range' use selectedDates and onDatesChange
 
   const [selected, onChange] = useState<Date[]>([])
   const [offset, setOffset] = useState<Date>()
@@ -88,42 +89,40 @@ export function DatePicker({ onDatesChange, selectedDates, mode = 'single', conf
   }, [selected])
 
   return (
-    <Tinted>
-      <DPicker
-        open={open}
-        onOpenChange={setOpen}
-        config={{
-          selectedDates: dates,
-          onDatesChange: onValueChange,
-          onOffsetChange: onOffChange,
-          offsetDate: offsetValue,
-          calendar: {
-            offsets: [-1, 1],
-          },
-          ...config,
-          dates: {
-            mode: ['year', 'month'].includes(mode) ? 'single' : mode,
-            toggle: true,
-            ...config?.dates
-          },
-        }}
-      >
-        <DPicker.Trigger asChild>
-          <DatePickerInput
-            placeholder={placeholder ?? data[mode].placeholder}
-            value={data[mode].value}
-            onReset={() => {
-              onValueChange([])
-              onOffChange(undefined)
-            }}
-            onButtonPress={() => setOpen(true)}
-          />
-        </DPicker.Trigger>
-        <DPicker.Content>
-          <DPicker.Content.Arrow />
-          {data[mode].body}
-        </DPicker.Content>
-      </DPicker>
-    </Tinted>
+    <DPicker
+      open={open}
+      onOpenChange={setOpen}
+      config={{
+        selectedDates: dates,
+        onDatesChange: onValueChange,
+        onOffsetChange: onOffChange,
+        offsetDate: offsetValue,
+        calendar: {
+          offsets: [-1, 1],
+        },
+        ...config,
+        dates: {
+          mode: ['year', 'month'].includes(mode) ? 'single' : mode,
+          toggle: true,
+          ...config?.dates
+        },
+      }}
+    >
+      <DPicker.Trigger asChild>
+        <DatePickerInput
+          placeholder={placeholder ?? data[mode].placeholder}
+          value={data[mode].value}
+          onReset={() => {
+            onValueChange([])
+            onOffChange(undefined)
+          }}
+          onButtonPress={() => setOpen(true)}
+        />
+      </DPicker.Trigger>
+      <DPicker.Content>
+        <DPicker.Content.Arrow />
+        {data[mode].body}
+      </DPicker.Content>
+    </DPicker>
   )
 }

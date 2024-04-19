@@ -31,7 +31,7 @@ const CallExpression = (node) => {
     ) as Field[]
 
     return (
-        <Node icon={ArrowUpRight} node={node} isPreview={!id} title={(nodeData.to ? nodeData.to : 'x') + '(' + (paramsArray.map(p => nodeData[p] ? dumpArgumentsData(nodeData[p]) : '...').join(',')) + ')'} id={id} color={color}>
+        <Node icon={ArrowUpRight} node={node} isPreview={!id} title={(nodeData.to ? nodeData.to : 'x') + '(' + (!id?'':(paramsArray.map(p => nodeData[p] ? dumpArgumentsData(nodeData[p]) : '...').join(',')))+ ')'} id={id} color={color}>
             <NodeParams id={id} params={nodeParams} />
             <NodeParams id={id} params={[{ label: 'Await', field: 'await', type: 'boolean', static: true }]} />
             <AddPropButton keyId={'param-' + nextId} id={id} nodeData={nodeData} />
@@ -81,6 +81,8 @@ CallExpression.dump = (node, nodes, edges, nodesData, metadata = null, enableMar
     const keys = Object.keys(data).sort()
 
     const params = keys.filter(key => key.startsWith('param')).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map((param) => {
+        if(data[param]?._dump) return data[param]._dump(data, level)
+
         let part;
         const fallback = data._fallBack ? data._fallBack.find(f => f.port == param) : null
 
