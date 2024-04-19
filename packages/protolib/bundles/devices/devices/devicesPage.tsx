@@ -54,17 +54,17 @@ const MqttTest = ({ onSetStage, onSetModalFeedback }) => {
 
 const DevicesIcons = { name: Tag, deviceDefinition: BookOpen }
 
-const callText = async (url: string, method: string, params?: string, token?: string): Promise<any> => {
+const callText = async (url: string, method: string, params?: any, token?: string): Promise<any> => {
   var fetchParams: any = {
     method: method,
     headers: {
-      'Content-Type': 'text/plain;charset=UTF-8'
-    }
+      'Content-Type': 'application/json'
+    },
   }
 
 
   if (params) {
-    fetchParams.body = params;
+    fetchParams.body = JSON.stringify(params);
   }
 
   let separator = '?';
@@ -98,9 +98,11 @@ export default {
     const [modalFeedback, setModalFeedback] = useState<any>()
     const [stage, setStage] = useState('')
     const yamlRef = React.useRef()
+    const [targetDevice, setTargetDevice] = useState('')
     // const { message } = useSubscription(['device/compile']);
 
     const flashDevice = async (deviceName, deviceDefinitionId) => {
+      setTargetDevice(deviceName)
       console.log("Flash device: ", { deviceName, deviceDefinitionId });
 
       const response = await API.get('/adminapi/v1/deviceDefinitions/' + deviceDefinitionId);
@@ -144,12 +146,12 @@ export default {
       //const deviceObj = eval(deviceCode)
     }
     const sendMessage = async (notUsed) => {
-      await fetch(compileActionUrl())
+      await fetch(compileActionUrl(targetDevice))
     }
 
     const compile = async () => {
       setModalFeedback({ message: `Compiling firmware...`, details: { error: false } })
-      const compileMsg = { type: "spawn", configuration: "test.yaml" };
+      const compileMsg = { type: "spawn", configuration: +".yaml" };
       sendMessage(JSON.stringify(compileMsg));
     }
 
@@ -165,15 +167,16 @@ export default {
     }
 
     const saveYaml = async (yaml) => {
-      console.log("Save Yaml")
-      console.log(await callText(postYamlApiEndpoint(), 'POST', yaml));
+      console.log("Save Yaml: ",await callText(postYamlApiEndpoint(targetDevice), 'POST', {"yaml": yaml}));
     }
 
     useEffect(() => {
       const process = async () => {
         if (stage == 'yaml') {
           await saveYaml(yamlRef.current)
-          setStage('compile')
+          setTimeout(() => {
+            setStage('compile')            
+          }, 1*1000);
         } else if (stage == 'compile') {
           console.log("stage - compile")
           await compile()

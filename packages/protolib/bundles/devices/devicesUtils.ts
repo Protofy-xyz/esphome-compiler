@@ -177,20 +177,20 @@ export const flash = async (cb) => {
 }
 
 
-const onlineCompiler = "firmware.protofy.xyz";
+const onlineCompiler = "localhost:8080";
 
 const downloadDeviceFirmwareEndpoint = () => {
-    return (`https://${onlineCompiler}/api/v1/device/download?configuration=test.yaml&type=firmware-factory.bin`)
+    return (`http://${onlineCompiler}/api/v1/device/download?configuration=test.yaml&type=firmware-factory.bin`)
 };
 
 export const onlineCompilerSecureWebSocketUrl = () => {
-    return (`wss://${onlineCompiler}/ws`)
+    return (`ws://${onlineCompiler}/ws`)
 };
 
-export const postYamlApiEndpoint = () => {
-    return (`https://${onlineCompiler}/api/v1/device/edit?configuration=test.yaml`);
+export const postYamlApiEndpoint = (targetDevice) => {
+    return (`http://${onlineCompiler}/api/v1/device/edit/${targetDevice}`);
 };
 
-export const compileActionUrl = () => {
-    return (`https://${onlineCompiler}/api/v1/device/compile`)
+export const compileActionUrl = (targetDevice) => {
+    return (`http://${onlineCompiler}/api/v1/device/compile/${targetDevice}`)
 };
