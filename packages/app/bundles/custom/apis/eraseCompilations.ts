@@ -39,37 +39,46 @@ export default Protofy("code", async (app: Application, context) => {
   context.automation(
     app,
     async (params) => {
-      context.object.list(
-        "compilation",
-        0,
-        10000,
-        null,
-        async (items, numPages, totalItems) => {
-          items.forEach((element) => {
-            console.log(element);
-            context.object.deleteObject(
-              "compilation",
-              element.id,
-              null,
-              null,
-              null
-            );
-          });
-        },
-        null
-      );
-      context.os.spawn(
-        "rm",
-        ["-rf", "esphome"],
-        {
-          cwd: "../../data",
-        },
-        async (data) => console.log("DDATA", data),
-        async (data) => console.log("DDATA", data),
-        async (data) => console.log("DDATA", data),
-        async (data) => console.log("DDATA", data)
-      );
+      await eraseCompilations();
     },
     "EraseCompilations"
   );
+  context.createPeriodicSchedule(
+    "00",
+    "00",
+    async () => await eraseCompilations(),
+    "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
+  );
+  const eraseCompilations = async () => {
+    context.object.list(
+      "compilation",
+      0,
+      10000,
+      null,
+      async (items, numPages, totalItems) => {
+        items.forEach((element) => {
+          console.log(element);
+          context.object.deleteObject(
+            "compilation",
+            element.id,
+            null,
+            null,
+            null
+          );
+        });
+      },
+      null
+    );
+    context.os.spawn(
+      "rm",
+      ["-rf", "esphome"],
+      {
+        cwd: "../../data",
+      },
+      null,
+      null,
+      null,
+      null
+    );
+  };
 });
