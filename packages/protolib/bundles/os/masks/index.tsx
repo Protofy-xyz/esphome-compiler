@@ -1,6 +1,10 @@
 import CommandExecutor from "./ChildProcessSpawn";
-import writeFile from "./writeFile";
+import WriteFile from "./WriteFile";
+import PathExists from "./ExistsSync";
+import CreateFolder from "./MkdirSync"
 export default [
     CommandExecutor,
-    writeFile
+    WriteFile, 
+    PathExists,  
+    CreateFolder
 ]
