@@ -7,14 +7,36 @@ const WriteFile = ({ node = {}, nodeData = {}, children }: any) => {
     const paramsRef = useRef()
     const color = useColorFromPalette(11)
 
+    const params = [
+        {
+            "label": "path",
+            "field": "param-1",
+            "type": "input"
+        },
+        {
+            "label": "content",
+            "field": "param-2",
+            "type": "input"
+        }
+    ]
+    const fallbacks = [
+        {
+            "label": "onError (err)",
+            "field": "param-3",
+            "preText": "async (err) => ",
+            "postText": "",
+            "fallbackText": "null",
+            "type": "output"
+        }
+    ]
+
     return (
         <Node icon={Cable} node={node} isPreview={!node.id} title='Write file' color={color} id={node.id} skipCustom={true}>
-            <NodeParams id={node.id} params={[{ label: 'path', field: 'param-1', type: 'input' }]} />
-            <NodeParams id={node.id} params={[{ label: 'content', field: 'param-2', type: 'input' }]} />
-
-            <div style={{ marginTop: "80px" }}>
-                <FlowPort id={node.id} type='output' label='onError (err)' style={{ top: '200px' }} handleId={'onError (err)'} />
-                <FallbackPort fallbackText="null" node={node} port={'param-3'} type={"target"} fallbackPort={'onError (err)'} portType={"_"} preText="async (err) => " postText="" />
+            <div ref={paramsRef}>
+                <NodeParams id={node.id} params={params} />
+            </div>
+            <div>
+                <FallbackPortList node={node} fallbacks={fallbacks} startPosX={paramsRef?.current?.clientHeight} />
             </div>
         </Node>
     )
@@ -30,7 +52,7 @@ export default {
     },
     getComponent: (node, nodeData, children) => <WriteFile node={node} nodeData={nodeData} children={children} />,
     filterChildren: (node, childScope, edges)=> {
-        childScope = filterCallback("3","onError (err)")(node,childScope,edges)
+        childScope = filterCallback("3")(node,childScope,edges)
         return childScope
     },
     getInitialData: () => {
