@@ -13,11 +13,10 @@ import { Paragraph, Stack, TextArea, XStack, YStack } from '@my/ui';
 import { getPendingResult } from "protolib/base";
 import { Pencil, UploadCloud } from '@tamagui/lucide-icons';
 import { usePageParams } from '../../../next';
-import { onlineCompilerSecureWebSocketUrl, postYamlApiEndpoint, compileActionUrl } from "../devicesUtils";
+import { onlineCompilerSecureWebSocketUrl, postYamlApiEndpoint, compileActionUrl, compileMessagesTopic } from "../devicesUtils";
 
-
-const MqttTest = ({ onSetStage, onSetModalFeedback }) => {
-  const { message } = useSubscription(['device/compile']);
+const MqttTest = ({ onSetStage, onSetModalFeedback, compileSessionId }) => {
+  const { message } = useSubscription([compileMessagesTopic(compileSessionId)]);
   //keep a log of messages until success/failure
   //so we can inform the user of the problems if anything fails.
 
@@ -37,8 +36,10 @@ const MqttTest = ({ onSetStage, onSetModalFeedback }) => {
             message: <YStack f={1} height="100%">
               <Paragraph color="$red8" mt="$3">Error compiling code.</Paragraph>
               <Paragraph color="$red8">Please check your flow configuration.</Paragraph>
-              <TextArea textAlign="left" f={1} mt="$2" mb={"$5"}>
-                {messages.map((ele) => ele.data).join('')}
+              <TextArea textAlign="left" f={1} mt="$2" mb={"$5"} minHeight={"200px"} value={
+                messages.map((ele) => ele.message).join('')
+              }>
+                
               </TextArea>
             </YStack>, details: { error: true }
           })
@@ -76,11 +77,6 @@ const callText = async (url: string, method: string, params?: any, token?: strin
   console.log("Deff URL: ", defUrl)
   return fetch(defUrl, fetchParams)
     .then(function (response) {
-      if (response.status == 200) {
-        return "ok";
-      } console.log(response.status);
-      if (!response.ok) {
-      }
       return response;
     })
 }
@@ -99,6 +95,7 @@ export default {
     const [stage, setStage] = useState('')
     const yamlRef = React.useRef()
     const [targetDevice, setTargetDevice] = useState('')
+    const [compileSessionId, setCompileSessionId] = useState('')
     // const { message } = useSubscription(['device/compile']);
 
     const flashDevice = async (deviceName, deviceDefinitionId) => {
@@ -146,7 +143,9 @@ export default {
       //const deviceObj = eval(deviceCode)
     }
     const sendMessage = async (notUsed) => {
-      await fetch(compileActionUrl(targetDevice))
+      const response = await fetch(compileActionUrl(targetDevice, compileSessionId))
+      const data = await response.json()
+      console.log("🤖 ~ sendMessage ~ data:", data)
     }
 
     const compile = async () => {
@@ -167,7 +166,10 @@ export default {
     }
 
     const saveYaml = async (yaml) => {
-      console.log("Save Yaml: ",await callText(postYamlApiEndpoint(targetDevice), 'POST', {"yaml": yaml}));
+      const response = await callText(postYamlApiEndpoint(targetDevice), 'POST', {"yaml": yaml})
+      const data = await response.json()
+      console.log("Save Yaml, compileSessionId: ", data.compileSessionId);
+      setCompileSessionId(data.compileSessionId)
     }
 
     useEffect(() => {
@@ -176,13 +178,13 @@ export default {
           await saveYaml(yamlRef.current)
           setTimeout(() => {
             setStage('compile')            
-          }, 1*1000);
+          }, 1*1000);//Todo remove setTimeout
         } else if (stage == 'compile') {
           console.log("stage - compile")
           await compile()
         } else if (stage == 'write') {
           try {
-            await flash(flashCb)
+            await flash(flashCb, targetDevice, compileSessionId)
             setStage('idle')
           } catch (e) { flashCb({ message: 'Error writing the device. Check that the USB connection and serial port are correctly configured.', details: { error: true } }) }
         } else if (stage == 'upload') {
@@ -245,7 +247,7 @@ export default {
     return (<AdminPage title="Devices" pageSession={pageSession}>
       <Connector brokerUrl= {onlineCompilerSecureWebSocketUrl()}>
         <DeviceModal stage={stage} onCancel={() => setShowModal(false)} onSelect={onSelectPort} modalFeedback={modalFeedback} showModal={showModal} />
-        <MqttTest onSetStage={(v) => setStage(v)} onSetModalFeedback={(v) => setModalFeedback(v)} />
+        <MqttTest onSetStage={(v) => setStage(v)} onSetModalFeedback={(v) => setModalFeedback(v)} compileSessionId={compileSessionId} />
       </Connector>
       <DataView
         defaultView={"grid"}
