@@ -3,7 +3,7 @@ import { useColorFromPalette } from 'protoflow/src/diagram/Theme'
 import { Cable } from 'lucide-react';
 import { useRef } from 'react';
 
-const CommandExecutor = ({ node = {}, nodeData = {}, children }: any) => {
+const ChildProcessSpawn = ({ node = {}, nodeData = {}, children }: any) => {
     const paramsRef = useRef()
     const color = useColorFromPalette(10)
 
@@ -69,12 +69,12 @@ const CommandExecutor = ({ node = {}, nodeData = {}, children }: any) => {
     //     </Node >
     // )
     return (
-        <Node icon={Cable} node={node} isPreview={!node.id} title='Command executor' color={color} id={node.id} skipCustom={true}>
+        <Node icon={Cable} node={node} isPreview={!node.id} title='Child process spawn' color={color} id={node.id} skipCustom={true}>
             <NodeParams id={node.id} params={[{ label: 'command', field: 'param-1', type: 'input' }]} />
             <NodeParams id={node.id} params={[{ label: '[args]', field: 'param-2', type: 'input' }]} />
             <NodeParams id={node.id} params={[{ label: '{options}', field: 'param-3', type: 'input' }]} />
 
-            <div style={{ marginTop: "180px" }}>
+            <div style={{ marginTop: "230px" }}>
                 <FlowPort id={node.id} type='output' label='stdout OnData (data)' style={{ top: '250px' }} handleId={'stdout OnData (data)'} />
                 <FallbackPort fallbackText="null" node={node} port={'param-4'} type={"target"} fallbackPort={'stdout OnData (data)'} portType={"_"} preText="async (data) => " postText="" />
                 <FlowPort id={node.id} type='output' label='stderr OnData (data)' style={{ top: '300px' }} handleId={'stderr OnData (data)'} />
@@ -89,14 +89,14 @@ const CommandExecutor = ({ node = {}, nodeData = {}, children }: any) => {
 }
 
 export default {
-    id: 'CommandExecutor',
+    id: 'ChildProcessSpawn',
     type: 'CallExpression',
     category: 'OS',
     keywords: ['executor', 'os', 'command'],
     check: (node, nodeData) => {
-        return node.type == "CallExpression" && nodeData.to?.startsWith('context.os.command')
+        return node.type == "CallExpression" && nodeData.to?.startsWith('context.os.spawn')
     },
-    getComponent: (node, nodeData, children) => <CommandExecutor node={node} nodeData={nodeData} children={children} />,
+    getComponent: (node, nodeData, children) => <ChildProcessSpawn node={node} nodeData={nodeData} children={children} />,
     filterChildren: (node, childScope, edges)=> {
         childScope = filterCallback("4", "stdout OnData (data)")(node,childScope,edges)
         childScope = filterCallback("5", "stderr OnData (data)")(node,childScope,edges)
@@ -106,7 +106,7 @@ export default {
     },
     getInitialData: () => {
         return {
-            to: 'context.os.command',
+            to: 'context.os.spawn',
             "param-1": {
                 value: "",
                 kind: "StringLiteral"

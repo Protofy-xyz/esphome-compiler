@@ -1,6 +1,6 @@
 const { spawn } = require('child_process')
 
-export async function commandExecutor(
+export async function childProcessSpawn(
   command,
   args,
   options,

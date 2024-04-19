@@ -1,5 +1,5 @@
-import {commandExecutor} from "./commandExecutor";
+import {childProcessSpawn} from "./childProcessSpawn";
 
 export default {
-    command: commandExecutor,
+    spawn: childProcessSpawn,
 }

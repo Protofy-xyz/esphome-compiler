@@ -1,4 +1,4 @@
-import CommandExecutor from "./CommandExecutor";
+import CommandExecutor from "./ChildProcessSpawn";
 
 export default [
     CommandExecutor
