@@ -24,6 +24,8 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 
+import { v4 as uuidv4 } from "uuid";
+
 const root = path.join(process.cwd(), "..", "..");
 const logger = getLogger();
 
@@ -47,11 +49,44 @@ export default Protofy("code", async (app, context) => {
   logger.info("Edit started");
   app.post("/api/v1/device/edit/:targetDevice", async (req, res) => {
     // console.log("YAml: ", req.body.yaml);
+    const esphomePath = "../../data/esphome/";
+    const compileSessionId = uuidv4();
+
+    console.log(
+      "🤖 ~ app.post ~ context.os.pathExists(esphomePath):",
+      context.os.pathExists(esphomePath)
+    );
+    context.flow.switch(
+      context.os.pathExists(esphomePath),
+      false,
+      "equals",
+      async () => context.os.createFolder(esphomePath),
+      null,
+      null
+    );
     context.os.fileWriter(
-      "../../data/esphome/" + req.params.targetDevice + ".yaml",
+      esphomePath + req.params.targetDevice + "-" + compileSessionId + ".yaml",
       req.body.yaml,
       null
     );
-    res.send("Action Done");
+    context.object.create(
+      "compilation",
+      {
+        id: compileSessionId,
+        done: false,
+      },
+      null,
+      async (item) =>
+        context.object.list(
+          "compilation",
+          0,
+          50,
+          null,
+          async (items, numPages, totalItems) => console.log("Items", items),
+          null
+        ),
+      null
+    );
+    res.send({ compileSessionId: compileSessionId });
   });
 });

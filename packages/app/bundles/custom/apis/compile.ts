@@ -44,23 +44,27 @@ export default Protofy("code", async (app, context) => {
   //         : context.devicePub('testdevice', 'switch', 'testrelay', 'ON')
   // })
   app.get("/api/v1/device/compile/:targetDevice", async (req, res) => {
-    // console.log(req, res)
-    const targetDevice = req.params.targetDevice
+    const targetDevice = req.params.targetDevice;
+    const compileSessionId = req.query.compileSessionId;
+    const fileName = targetDevice + "-" + compileSessionId;
     logger.info("Compile started");
     context.os.spawn(
       "esphome",
-      ["compile", targetDevice + ".yaml"],
+      ["compile", fileName + ".yaml"],
       {
         cwd: "../../data/esphome",
         shell: true,
       },
-      null,
+      async (data) => {
+        context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data}))
+      },
       null,
       async (code) => {
         console.log("Compile code: ", code)
         if(code == 0){
+          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code}))
           const fwOriginPath = '.esphome/build/'+ targetDevice + '/.pioenvs/' + targetDevice +'/firmware-factory.bin'
-          const fwDestinationPath = targetDevice+'.bin'
+          const fwDestinationPath = fileName+'.bin'
           context.os.spawn(
             "cp",
             [fwOriginPath, fwDestinationPath],
@@ -73,10 +77,13 @@ export default Protofy("code", async (app, context) => {
             null,
             null,
           )
+          res.send({status:"Compiled successfully"});
+        }else{
+          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code}))
+          res.send({status: "Can't compile device"});
         }
       },
       null
     );
-    res.send("Compile action finished");
   });
 });
