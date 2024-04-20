@@ -1,9 +1,9 @@
 import {Protofy} from 'protolib/base'
-import CompileApi from "./Compile";
-import EditApi from "./Edit";
-import CompilationApi from "./Compilation";
-import EraseCompilationsApi from "./EraseCompilations";
-import DownloadApi from "./Download";
+import CompileApi from "./compile";
+import EditApi from "./edit";
+import CompilationApi from "./compilation";
+import EraseCompilationsApi from "./eraseCompilations";
+import DownloadApi from "./download";
 const autoApis = Protofy("apis", {
     Compile: CompileApi,
     Edit: EditApi,
