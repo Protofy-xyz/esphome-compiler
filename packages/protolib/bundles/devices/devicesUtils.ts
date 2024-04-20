@@ -177,22 +177,22 @@ export const flash = async (cb, deviceName, compileSessionId) => {
 }
 
 
-const onlineCompiler = "localhost:8080";
-
+const onlineCompiler = "firmware-smafy.protofy.xyz";
+const secured = true;
 const downloadDeviceFirmwareEndpoint = (targetDevice, compileSessionId) => {
-    return (`http://${onlineCompiler}/api/v1/device/download/${targetDevice}?compileSessionId=${compileSessionId}`)
+    return (`http${secured?"s":""}://${onlineCompiler}/api/v1/device/download/${targetDevice}?compileSessionId=${compileSessionId}`)
 };
 
 export const onlineCompilerSecureWebSocketUrl = () => {
-    return (`ws://${onlineCompiler}/websocket`)
+    return (`ws${secured?"s":""}://${onlineCompiler}/websocket`)
 };
 
 export const postYamlApiEndpoint = (targetDevice) => {
-    return (`http://${onlineCompiler}/api/v1/device/edit/${targetDevice}`);
+    return (`http${secured?"s":""}://${onlineCompiler}/api/v1/device/edit/${targetDevice}`);
 };
 
 export const compileActionUrl = (targetDevice, compileSessionId) => {
-    return (`http://${onlineCompiler}/api/v1/device/compile/${targetDevice}?compileSessionId=${compileSessionId}`)
+    return (`http${secured?"s":""}://${onlineCompiler}/api/v1/device/compile/${targetDevice}?compileSessionId=${compileSessionId}`)
 };
 
 export const compileMessagesTopic = (targetDevice) => {
