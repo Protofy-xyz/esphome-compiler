@@ -15,39 +15,60 @@ import { Pencil, UploadCloud } from '@tamagui/lucide-icons';
 import { usePageParams } from '../../../next';
 import { onlineCompilerSecureWebSocketUrl, postYamlApiEndpoint, compileActionUrl, compileMessagesTopic } from "../devicesUtils";
 
-const MqttTest = ({ onSetStage, onSetModalFeedback, compileSessionId }) => {
+const MqttTest = ({ onSetStage, onSetModalFeedback, compileSessionId, stage }) => {
   const { message } = useSubscription([compileMessagesTopic(compileSessionId)]);
   //keep a log of messages until success/failure
   //so we can inform the user of the problems if anything fails.
 
   const [messages, setMessages] = useState([])
+  var isDoneCompiling = false
   useEffect(() => {
-    console.log("Compile Message: ", message);
-    try {
-      if (message?.message) {
-        const data = JSON.parse(message?.message.toString());
-        if (data.event == 'exit' && data.code == 0) {
-          setMessages([])
-          console.log("Succesfully compiled");
-          onSetStage('upload')
-        } else if (data.event == 'exit' && data.code != 0) {
-          console.error('Error compiling', messages)
-          onSetModalFeedback({
-            message: <YStack f={1} height="100%">
-              <Paragraph color="$red8" mt="$3">Error compiling code.</Paragraph>
-              <Paragraph color="$red8">Please check your flow configuration.</Paragraph>
-              <TextArea textAlign="left" f={1} mt="$2" mb={"$5"} minHeight={"200px"} value={
-                messages.map((ele) => ele.message).join('')
-              }>
-                
-              </TextArea>
-            </YStack>, details: { error: true }
-          })
+    if(stage == "compile"){
+      console.log("Compile Message: ", message);
+      try {
+        if (message?.message) {
+          const data = JSON.parse(message?.message.toString());
+          if(data.position!="undefined"){
+            console.log("DEV: ", data)
+            if(data.position && !isDoneCompiling){
+              onSetModalFeedback({
+                message: `Current position in queue: ${data.position}. Status: ${data.status}`,
+                details: { error: false }
+              });
+            }else{
+              onSetModalFeedback({
+                message: `Compiling..................`,
+                details: { error: false }
+              });
+              isDoneCompiling = true
+            }
+          }
+          
+          if (data.event == 'exit' && data.code == 0) {
+            isDoneCompiling = true
+            setMessages([])
+            console.log("Succesfully compiled");
+            onSetStage('upload')
+          } else if (data.event == 'exit' && data.code != 0) {
+            isDoneCompiling = true
+            console.error('Error compiling', messages)
+            onSetModalFeedback({
+              message: <YStack f={1} height="100%">
+                <Paragraph color="$red8" mt="$3">Error compiling code.</Paragraph>
+                <Paragraph color="$red8">Please check your flow configuration.</Paragraph>
+                <TextArea textAlign="left" f={1} mt="$2" mb={"$5"} minHeight={"200px"} value={
+                  messages.map((ele) => ele.message).join('')
+                }>
+                  
+                </TextArea>
+              </YStack>, details: { error: true }
+            })
+          }
+          setMessages([...messages, data])
         }
-        setMessages([...messages, data])
+      } catch (err) {
+        console.log(err);
       }
-    } catch (err) {
-      console.log(err);
     }
   }, [message])
   return <></>
@@ -142,16 +163,16 @@ export default {
       }
       //const deviceObj = eval(deviceCode)
     }
-    const sendMessage = async (notUsed) => {
+    const sendMessage = async () => {
       const response = await fetch(compileActionUrl(targetDevice, compileSessionId))
       const data = await response.json()
       console.log("🤖 ~ sendMessage ~ data:", data)
     }
 
     const compile = async () => {
-      setModalFeedback({ message: `Compiling firmware...`, details: { error: false } })
-      const compileMsg = { type: "spawn", configuration: +".yaml" };
-      sendMessage(JSON.stringify(compileMsg));
+      // setModalFeedback({ message: `Compiling firmware...`, details: { error: false } })
+      // const compileMsg = { type: "spawn", configuration: +".yaml" };
+      sendMessage();
     }
 
     const flashCb = (msgObj) => {
@@ -247,7 +268,7 @@ export default {
     return (<AdminPage title="Devices" pageSession={pageSession}>
       <Connector brokerUrl= {onlineCompilerSecureWebSocketUrl()}>
         <DeviceModal stage={stage} onCancel={() => setShowModal(false)} onSelect={onSelectPort} modalFeedback={modalFeedback} showModal={showModal} />
-        <MqttTest onSetStage={(v) => setStage(v)} onSetModalFeedback={(v) => setModalFeedback(v)} compileSessionId={compileSessionId} />
+        <MqttTest onSetStage={(v) => setStage(v)} onSetModalFeedback={(v) => setModalFeedback(v)} compileSessionId={compileSessionId} stage={stage} />
       </Connector>
       <DataView
         defaultView={"grid"}
