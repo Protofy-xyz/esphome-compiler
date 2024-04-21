@@ -177,8 +177,8 @@ export const flash = async (cb, deviceName, compileSessionId) => {
 }
 
 
-const onlineCompiler = "firmware-smafy.protofy.xyz";
-const secured = true;
+const onlineCompiler = "localhost:8080";
+const secured = false;
 const downloadDeviceFirmwareEndpoint = (targetDevice, compileSessionId) => {
     return (`http${secured?"s":""}://${onlineCompiler}/api/v1/device/download/${targetDevice}?compileSessionId=${compileSessionId}`)
 };
