@@ -1,0 +1,4 @@
+#!/bin/bash
+./init
+./build
+./dev-service-fast

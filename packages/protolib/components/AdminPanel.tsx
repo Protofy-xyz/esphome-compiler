@@ -3,7 +3,7 @@ import { PanelLayout } from 'app/layout/PanelLayout'
 import { SelectList, useWorkspaces, useUserSettings, useSession, PanelMenu, MainPanel, JSONViewer, useTint, Chip, ActiveGroup, GroupButton, ButtonGroup, Search } from 'protolib'
 import Workspaces from 'app/bundles/workspaces'
 import { InteractiveIcon } from './InteractiveIcon'
-import { Activity, Radio, Tag, Hash, Microscope, Bug, Info, AlertCircle, XCircle, Bomb, Filter } from '@tamagui/lucide-icons'
+import { Activity, Radio, Tag, Hash, Microscope, Bug, Info, AlertCircle, XCircle, Bomb, Filter} from '@tamagui/lucide-icons'
 import { Tinted } from './Tinted'
 import { atom, useAtom } from 'jotai';
 import { useEffect, useState } from 'react'
@@ -39,46 +39,48 @@ export const RightPanelAtom = atom(20)
 export const BusMessages = atom([])
 
 const types = {
-  10: { name: "TRACE", color: "$green3" },
-  20: { name: "DEBUG", color: "$color4" },
-  30: { name: "INFO", color: "$color7" },
-  40: { name: "WARN", color: "$yellow7" },
-  50: { name: "ERROR", color: "$red7" },
-  60: { name: "FATAL", color: "$red10" }
+  10: { name: "TRACE", color: "$green3", icon: Microscope },
+  20: { name: "DEBUG", color: "$color4", icon: Bug },
+  30: { name: "INFO", color: "$color7", icon: Info },
+  40: { name: "WARN", color: "$yellow7", icon: AlertCircle  },
+  50: { name: "ERROR", color: "$red7", icon: XCircle },
+  60: { name: "FATAL", color: "$red10", icon: Bomb }
 }
 
-const MessageList = ({ data, topic }) => {
+const MessageList = React.memo(({ data, topic }) => {
   const from = topic.split("/")[1]
   const type = topic.split("/")[2]
-
-  return <XStack p="$3" ml={"$0"} ai="center" jc="center">
+  const Icon = types[type]?.icon
+  const { level, time, pid, hostname, msg, name, ...cleanData} = data
+  return <XStack 
+    p="$3" 
+    ml={"$0"}
+    ai="center"
+    jc="center"
+  >
     <YStack>
-      <XStack left={-6} hoverStyle={{ bc: "$color6" }} cursor="pointer" ai="center" mb="$2" py={3} px="$2" width="fit-content" ml={"$3"}>
+      <XStack left={-12} hoverStyle={{ bc: "$color6" }} cursor="pointer" ai="center" mb="$2" py={3} px="$2" width="fit-content" ml={"$3"}>
         <XStack ai="center" hoverStyle={{ o: 1 }} o={0.9}>
           {/* <Chip text={types[type]?.name+"("+topic+")"} color={types[type]?.color} h={25} /> */}
-          <Chip text={types[type]?.name} color={types[type]?.color} h={25} />
-          <Text ml={"$3"} o={0.9} fontSize={14} fontWeight={"500"}>{from}</Text>
-        </XStack>
-      </XStack>
-      <XStack left={-6} hoverStyle={{ bc: "$color6" }} cursor="pointer" ai="center" mb="$2" py={3} px="$2" width="fit-content" ml={"$3"}>
-        <XStack ai="center" hoverStyle={{ o: 1 }} o={0.9}>
-          <Hash color="var(--color7)" strokeWidth={2} size={20} />
-          <Text ml={"$2"} o={0.9} fontSize={14} fontWeight={"500"}>{data.msg}</Text>
+          <XStack mr={"$2"}><Icon size={20} strokeWidth={2} color={types[type]?.color} /></XStack>
+          {/* <Chip text={types[type]?.name} color={types[type]?.color} h={25} /> */}
+          <Text o={0.7} fontSize={14} fontWeight={"500"}>[{from}]</Text>
+          <Text ml={"$3"} o={0.9} fontSize={14} fontWeight={"500"}>{data.msg}</Text>
         </XStack>
       </XStack>
       <JSONViewer
         onChange={() => { }}
         editable={false}
-        data={data}
-        key={JSON.stringify(data)}
+        data={cleanData}
+        key={JSON.stringify(cleanData)}
         collapsible
         compact={false}
-        defaultCollapsed={true}
+        defaultCollapsed={false}
       //collapsedNodes={{0:{root: true}}}
       />
     </YStack>
   </XStack>
-}
+})
 
 export const LogPanel = () => {
   const [appState, setAppState] = useAtom(AppState)
@@ -133,6 +135,7 @@ export const LogPanel = () => {
       levels: levels.includes(level) ? levels.filter(l => l !== level) : [...levels, level],
     });
   };
+  const hoverStyle = React.useMemo(() => ({ bc: "$" + tint + "4" }), [tint]);
 
   return <YStack>
     <XStack ai="center" backgroundColor={'$backgroundTransparent'}>
@@ -187,10 +190,10 @@ export const LogPanel = () => {
 
     </XStack>
 
-    <ScrollView bc="transparent" f={1}>
+    <ScrollView bc="transparent" f={1} height={"calc( 100vh - 130px )"}>
       {filteredMessages.map((m, i) => {
         const data = parseMessage(m.message)
-        return <XStack bc="transparent" hoverStyle={{ bc: "$" + tint + "4" }} key={i} btw={0} bbw={1} boc={"$color4"}>
+        return <XStack bc="transparent" hoverStyle={hoverStyle} key={i} btw={0} bbw={1} boc={"$color4"}>
           <Tinted>
             <MessageList data={data} topic={m.topic} />
           </Tinted>
