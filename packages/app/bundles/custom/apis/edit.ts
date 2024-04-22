@@ -25,6 +25,7 @@ import fs from "fs";
 import path from "path";
 
 import { v4 as uuidv4 } from "uuid";
+const jsYaml = require("js-yaml");
 
 const root = path.join(process.cwd(), "..", "..");
 const logger = getLogger();
@@ -51,6 +52,8 @@ export default Protofy("code", async (app, context) => {
     // console.log("YAml: ", req.body.yaml);
     const esphomePath = "../../data/esphome/";
     const compileSessionId = uuidv4();
+    const fileName = req.params.targetDevice + "-" + compileSessionId;
+
 
     console.log(
       "🤖 ~ app.post ~ context.os.pathExists(esphomePath):",
@@ -64,9 +67,12 @@ export default Protofy("code", async (app, context) => {
       null,
       null
     );
+    const yamlObj = jsYaml.load(req.body.yaml)
+    yamlObj.esphome.build_path = "build/"+fileName
+    const yamlContent = jsYaml.dump(yamlObj,{lineWidth: -1})
     context.os.fileWriter(
-      esphomePath + req.params.targetDevice + "-" + compileSessionId + ".yaml",
-      req.body.yaml,
+      esphomePath + fileName + ".yaml",
+      yamlContent,
       null
     );
     context.object.create(
