@@ -67,9 +67,20 @@ export default Protofy("code", async (app, context) => {
       null,
       null
     );
-    const yamlObj = jsYaml.load(req.body.yaml)
-    yamlObj.esphome.build_path = "build/"+fileName
-    const yamlContent = jsYaml.dump(yamlObj,{lineWidth: -1})
+    const lambdaType = new jsYaml.Type('!lambda', {
+      kind: 'scalar',
+      resolve: data => true,
+      construct: data => {
+        return `@!lambda "${data}"@`;
+      },
+      instanceOf: String
+    });
+    const customSchema = jsYaml.DEFAULT_SCHEMA.extend({ explicit: [lambdaType] });
+
+    const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
+    yamlObj.esphome.build_path = "build/" + fileName;
+    const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema }).replace(/'@/g,"").replace(/@'/g,"")
+
     context.os.fileWriter(
       esphomePath + fileName + ".yaml",
       yamlContent,
