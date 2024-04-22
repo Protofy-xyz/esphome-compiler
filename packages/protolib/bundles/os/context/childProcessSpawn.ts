@@ -11,9 +11,7 @@ export async function childProcessSpawn(
 ) {
   const child = spawn(command, args, options)
   child.stdout.on('data', async (data) => {
-    if(stdoutOnData){
-        await stdoutOnData(data.toString())
-    } 
+    if(stdoutOnData) await stdoutOnData(data.toString())
   })
 
   child.stderr.on('data', async (data) => {

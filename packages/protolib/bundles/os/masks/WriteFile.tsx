@@ -1,4 +1,4 @@
-import { Node, NodeParams, CustomFieldsList, FallbackPortList, filterCallback, FlowPort, FallbackPort} from 'protoflow';
+import { Node, NodeParams, CustomFieldsList, FallbackPortList, filterCallback, FlowPort, FallbackPort, restoreCallback} from 'protoflow';
 import { useColorFromPalette } from 'protoflow/src/diagram/Theme'
 import { Cable } from 'lucide-react';
 import { useRef } from 'react';
@@ -21,6 +21,7 @@ const WriteFile = ({ node = {}, nodeData = {}, children }: any) => {
     ]
     const fallbacks = [
         {
+            "name": "error",
             "label": "onError (err)",
             "field": "param-3",
             "preText": "async (err) => ",
@@ -52,8 +53,12 @@ export default {
     },
     getComponent: (node, nodeData, children) => <WriteFile node={node} nodeData={nodeData} children={children} />,
     filterChildren: (node, childScope, edges)=> {
-        childScope = filterCallback("3")(node,childScope,edges)
+        childScope = filterCallback("3", "error")(node,childScope,edges)
         return childScope
+    },
+    restoreChildren: (node, nodes, originalNodes, edges, originalEdges) => {
+        let result = restoreCallback("3")(node, nodes, originalNodes, edges, originalEdges)
+        return result
     },
     getInitialData: () => {
         return {

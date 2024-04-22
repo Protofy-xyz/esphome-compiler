@@ -29,7 +29,7 @@ export default {
     id: 'PathExists',
     type: 'CallExpression',
     category: 'OS',
-    keywords: ['fs', 'os', 'write', 'file'],
+    keywords: ['fs', 'os', 'exist', 'file'],
     check: (node, nodeData) => {
         return node.type == "CallExpression" && nodeData.to?.startsWith('context.os.pathExists')
     },

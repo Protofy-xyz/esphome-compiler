@@ -29,7 +29,7 @@ export default {
     id: 'CreateFolder',
     type: 'CallExpression',
     category: 'OS',
-    keywords: ['fs', 'os', 'write', 'file'],
+    keywords: ['fs', 'os', 'make', 'dir', 'mkdir'],
     check: (node, nodeData) => {
         return node.type == "CallExpression" && nodeData.to?.startsWith('context.os.createFolder')
     },
