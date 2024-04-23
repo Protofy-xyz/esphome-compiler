@@ -13,6 +13,5 @@ export const context = {
     object,
     onRender,
     actionNavigate,
-    ...deviceContext,
-    os
+    ...deviceContext
 }

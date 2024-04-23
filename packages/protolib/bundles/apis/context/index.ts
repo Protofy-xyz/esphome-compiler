@@ -4,22 +4,37 @@ import {getLogger } from 'protolib/base';
 
 const logger = getLogger()
 
-export const automation = (app, cb, name)=>{
+export const automationResponse = (res, data) => {
+    res.send({result: data})
+}
+
+export const automation = (app, cb, name, disableAutoResponse?)=>{
+    if(!name) {
+        console.error("Automation name is required, doing nothing")
+        return
+    }
+
+    if(!cb) {
+        console.error("Automation callback is required, doing nothing")
+        return
+    }
+
     const url = "/api/v1/automations/"+name;
 
-    app.get(url,(req,res)=>{
+    app.get(url, async (req,res)=>{
         logger.info({name, params: req.query}, "Automation executed: "+name)
-        cb(req.query)
-        res.send('"OK"');
+        await cb(req.query, res)
+        if(!disableAutoResponse) {
+            automationResponse(res, "Automation executed")
+        }
     })
 }
 
-export const fetch = async (method, url, key?, hasSarviceToken=false, data={})=>{
+export const fetch = async (method, url, data={}, cb, errorCb, hasSarviceToken=false)=>{
     var urlEnch = url
     if(hasSarviceToken) {
         urlEnch = url.includes("?")? `${url}&token=${getServiceToken()}`: `${url}?token=${getServiceToken()}`
     }
-
     
     let result
     if(method == "get") {
@@ -29,10 +44,12 @@ export const fetch = async (method, url, key?, hasSarviceToken=false, data={})=>
     }
 
     if(result.isError) {
+        if(errorCb) errorCb(result.error)
         throw result.error
     }
 
-    return key? result.data[key] : result.data
+    if(cb) cb(result.data)
+    return result.data
 }
 
 export const deviceMonitor = async (device, subsystem, monitor) => {
