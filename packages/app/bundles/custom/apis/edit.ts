@@ -24,7 +24,6 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 
-import { v4 as uuidv4 } from "uuid";
 const jsYaml = require("js-yaml");
 
 const root = path.join(process.cwd(), "..", "..");
@@ -51,9 +50,8 @@ export default Protofy("code", async (app, context) => {
   app.post("/api/v1/device/edit/:targetDevice", async (req, res) => {
     // console.log("YAml: ", req.body.yaml);
     const esphomePath = "../../data/esphome/";
-    const compileSessionId = uuidv4();
+    const compileSessionId = context.utils.uuidGenerator("v4");
     const fileName = req.params.targetDevice + "-" + compileSessionId;
-
 
     console.log(
       "🤖 ~ app.post ~ context.os.pathExists(esphomePath):",
@@ -67,25 +65,26 @@ export default Protofy("code", async (app, context) => {
       null,
       null
     );
-    const lambdaType = new jsYaml.Type('!lambda', {
-      kind: 'scalar',
-      resolve: data => true,
-      construct: data => {
+    const lambdaType = new jsYaml.Type("!lambda", {
+      kind: "scalar",
+      resolve: (data) => true,
+      construct: (data) => {
         return `@!lambda "${data}"@`;
       },
-      instanceOf: String
+      instanceOf: String,
     });
-    const customSchema = jsYaml.DEFAULT_SCHEMA.extend({ explicit: [lambdaType] });
+    const customSchema = jsYaml.DEFAULT_SCHEMA.extend({
+      explicit: [lambdaType],
+    });
 
     const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
     yamlObj.esphome.build_path = "build/" + fileName;
-    const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema }).replace(/'@/g,"").replace(/@'/g,"")
+    const yamlContent = jsYaml
+      .dump(yamlObj, { lineWidth: -1, schema: customSchema })
+      .replace(/'@/g, "")
+      .replace(/@'/g, "");
 
-    context.os.fileWriter(
-      esphomePath + fileName + ".yaml",
-      yamlContent,
-      null
-    );
+    context.os.fileWriter(esphomePath + fileName + ".yaml", yamlContent, null);
     context.object.create(
       "compilation",
       {
