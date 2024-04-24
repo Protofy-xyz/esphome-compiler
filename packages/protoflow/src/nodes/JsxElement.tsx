@@ -8,6 +8,7 @@ import { Code } from 'lucide-react';
 import { DEV_WIP_GM } from '../toggles';
 import CreateMaskButton from '../CreateMaskButton';
 import { useNodeColor } from '../diagram/Theme';
+import { dumpArgumentsData, getArgumentsData } from '../utils/typesAndKinds';
 
 export const JsxElementFactory = (JsxType) => {
     const isSelfClosingElement = JsxType == 'JsxSelfClosingElement'
@@ -156,7 +157,7 @@ export function getKindName(value) {
             return Array.isArray(value) ? 'ArrayLiteralExpression' : 'ObjectLiteralExpression'
     }
 }
-// TODO: export function to protolib
+
 function dumpAttributeData(attrData: { kind: string, value: any }): any {
     if (!attrData) return
     const expressionKind = attrData.kind
@@ -168,13 +169,14 @@ function dumpAttributeData(attrData: { kind: string, value: any }): any {
         case 'TrueKeyword':
         case 'FalseKeyword':
         case 'Identifier':
+        case 'PropertyAccessExpression':
             break
         default:
             return
     }
     return "{" + value + "}"
 }
-// TODO: export function to protolib
+
 function getAttributeData(node: any): any {
     let atrVal
     var attributeKind = node?.getKindName()
@@ -187,39 +189,10 @@ function getAttributeData(node: any): any {
             break;
         default: //e.g JsxExpression
             const expression = node?.getExpression()
-            kind = expression?.getKindName()
-
-            switch (kind) {
-                case 'StringLiteral':
-                case 'NumericLiteral':
-                case 'TrueKeyword':
-                case 'FalseKeyword':
-                    atrVal = expression.getLiteralValue()
-                    break
-                case 'Identifier':
-                    atrVal = expression.getText()
-                    break
-                // case 'ObjectLiteralExpression':
-                //     const tmpProps = expression.getProperties().reduce((total, current) => {
-                //         var propKey = current.getName()
-                //         var propVal
-                //         try {
-                //             propVal = current.getInitializer()?.getLiteralValue()
-                //         } catch (e) {
-                //             propVal = current.getInitializer().getText()
-                //         }
-                //         return {
-                //             ...total,
-                //             [propKey]: propVal
-                //         }
-                //     }, {})
-
-                //     atrVal = tmpProps
-                //     break
-                default:
-                    return
-            }
-            break;
+            var data = getArgumentsData(expression)
+            if (!data) return
+            kind = data.kind
+            atrVal = data.value
     }
     return { value: atrVal, kind }
 }
