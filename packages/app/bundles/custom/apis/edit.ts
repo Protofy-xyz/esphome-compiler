@@ -69,7 +69,7 @@ export default Protofy("code", async (app, context) => {
       kind: "scalar",
       resolve: (data) => true,
       construct: (data) => {
-        return `@!lambda "${data}"@`;
+        return `@!lambda ${data}@`;
       },
       instanceOf: String,
     });
