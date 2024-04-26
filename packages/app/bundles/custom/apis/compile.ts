@@ -47,7 +47,7 @@ export default Protofy("code", async (app, context) => {
 
   const compileQueue = new Bull("compileQueue");
 
-  const maxConcurrentCompilations = 2;
+  const maxConcurrentCompilations = 5;
 
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId } = job.data;
