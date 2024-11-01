@@ -23,6 +23,7 @@ import { getLogger, API } from "protolib/base";
 import { Application } from "express";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto"; // Import the crypto module for hashing
 
 const jsYaml = require("js-yaml");
 
@@ -48,9 +49,11 @@ export default Protofy("code", async (app, context) => {
 
   logger.info("Edit started");
   app.post("/api/v1/device/edit/:targetDevice", async (req, res) => {
-    // console.log("YAml: ", req.body.yaml);
     const esphomePath = "../../data/esphome/";
-    const compileSessionId = context.utils.uuidGenerator("v4");
+
+    // Compute the compileSessionId based on the hash of the YAML content
+    const hash = crypto.createHash("sha256").update(req.body.yaml).digest("hex");
+    const compileSessionId = hash.substring(0, 16); // Use the first 16 characters of the hash as the ID
     const fileName = req.params.targetDevice + "-" + compileSessionId;
 
     console.log(
