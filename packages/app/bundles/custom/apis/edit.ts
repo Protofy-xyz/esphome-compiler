@@ -68,13 +68,17 @@ export default Protofy("code", async (app, context) => {
       null,
       null
     );
-    const lambdaType = new jsYaml.Type("!lambda", {
-      kind: "scalar",
-      resolve: (data) => true,
-      construct: (data) => {
-        return `@!lambda ${data}@`;
-      },
-      instanceOf: String,
+    
+    class LambdaString extends String {}
+    const lambdaType = new jsYaml.Type('!lambda', {
+      kind:   'scalar',
+      // loading: every !lambda-tagged piece of YAML gets passed to construct()
+      resolve: data => true,
+      construct: data => new LambdaString(data),
+
+      // dumping: only values instanceof LambdaString get represented
+      instanceOf: LambdaString,
+      represent: lambdaVal => lambdaVal.toString()
     });
     const customSchema = jsYaml.DEFAULT_SCHEMA.extend({
       explicit: [lambdaType],
@@ -82,10 +86,7 @@ export default Protofy("code", async (app, context) => {
 
     const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
     yamlObj.esphome.build_path = "build/" + fileName;
-    const yamlContent = jsYaml
-      .dump(yamlObj, { lineWidth: -1, schema: customSchema })
-      .replace(/'@/g, "")
-      .replace(/@'/g, "");
+    const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema })
 
     context.os.fileWriter(esphomePath + fileName + ".yaml", yamlContent, null);
     context.object.create(
