@@ -64,7 +64,9 @@ export default Protofy("code", async (app, context) => {
         async (data) => {
           context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data}));
         },
-        null,
+        async (data) => {
+          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data}));
+        },
         async (code) => {
           if (code == 0) {
             context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code}));
