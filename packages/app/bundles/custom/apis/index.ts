@@ -4,7 +4,7 @@ import EditApi from "./edit";
 import CompilationApi from "./compilation";
 import EraseCompilationsApi from "./eraseCompilations";
 import DownloadApi from "./download";
-import EsphomeApi from "./Esphome";
+import EsphomeApi from "./esphome";
 
 const autoApis = Protofy("apis", {
     Compile: CompileApi,
