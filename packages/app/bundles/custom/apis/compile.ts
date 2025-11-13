@@ -72,9 +72,23 @@ export default Protofy("code", async (app, context) => {
             context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code}));
             const fwOriginPath = '.esphome/build/'+ fileName + '/.pioenvs/' + targetDevice +'/firmware.factory.bin'
             const fwDestinationPath = fileName + '.bin'
+            const elfOriginPath = '.esphome/build/'+ fileName + '/.pioenvs/' + targetDevice +'/firmware.elf'
+            const elfDestinationPath = fileName + '.elf'
             context.os.spawn(
               "cp",
               [fwOriginPath, fwDestinationPath],
+              {
+                cwd: "../../data/esphome",
+                shell: true,
+              },
+              null,
+              null,
+              null,
+              null,
+            )
+            context.os.spawn(
+              "cp",
+              [elfOriginPath, elfDestinationPath],
               {
                 cwd: "../../data/esphome",
                 shell: true,

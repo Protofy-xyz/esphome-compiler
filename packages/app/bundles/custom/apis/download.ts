@@ -50,4 +50,11 @@ export default Protofy("code", async (app, context) => {
         const fileName = targetDevice+"-"+compileSessionId
         res.sendFile(fileName+".bin", {root: "../../data/esphome/" })
     });
+
+    app.get("/api/v1/device/downloadElf/:targetDevice", async (req, res) => {
+        const targetDevice = req.params.targetDevice
+        const compileSessionId = req.query.compileSessionId
+        const fileName = targetDevice+"-"+compileSessionId
+        res.sendFile(fileName+".elf", {root: "../../data/esphome/" })
+    });
 })
