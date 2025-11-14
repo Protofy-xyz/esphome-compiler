@@ -62,10 +62,10 @@ export default Protofy("code", async (app, context) => {
           shell: true,
         },
         async (data) => {
-          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data}));
+          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data, deviceName: targetDevice}));
         },
         async (data) => {
-          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data}));
+          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data, deviceName: targetDevice}));
         },
         async (code) => {
           if (code == 0) {
@@ -100,7 +100,7 @@ export default Protofy("code", async (app, context) => {
             )
             resolve();
           } else {
-            context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code}));
+            context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code, deviceName: targetDevice}));
             reject(new Error("Can't compile device"));
           }
         }
@@ -123,6 +123,7 @@ export default Protofy("code", async (app, context) => {
           message: "Job added to queue",
           position: jobOrder.length, // Approximate position
           status: "queued",
+          deviceName: targetDevice,
         })
       );
 
@@ -167,6 +168,7 @@ export default Protofy("code", async (app, context) => {
         message: "Job is now active",
         position: 1, // Active job is always at the front of the line
         status: "active",
+        deviceName: job.data.targetDevice,
       })
     );
   });
@@ -179,7 +181,8 @@ export default Protofy("code", async (app, context) => {
         context.topicPub(`device/compile/${job.data.compileSessionId}`, JSON.stringify({
           message: "Queue update",
           position: index + 1 - maxConcurrentCompilations,  // Convert index to 1-based position
-          status: 'queued'
+          status: 'queued',
+          deviceName: job.data.targetDevice,
         }));
       }
     }
