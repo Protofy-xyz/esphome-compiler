@@ -1,0 +1,19 @@
+{
+  "name": "esphome-dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "prepare-dev": "echo \"esphome dashboard does not need preparation\"",
+    "build": "echo \"esphome dashboard has no build step\"",
+    "package": "echo \"esphome dashboard has nothing to package\"",
+    "dev-standalone": "NODE_ENV=development node entrypoint.js",
+    "prod-standalone": "NODE_ENV=production node entrypoint.js",
+    "dev-service": "NODE_ENV=development pm2 start pm2.config.js",
+    "prod-service": "NODE_ENV=production pm2 start pm2.config.js",
+    "dev": "NODE_ENV=development pm2 start pm2.config.js --no-daemon",
+    "prod": "NODE_ENV=production pm2 start pm2.config.js --no-daemon"
+  },
+  "dependencies": {
+    "pm2": "^5.3.0"
+  }
+}

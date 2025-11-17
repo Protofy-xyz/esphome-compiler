@@ -5,7 +5,8 @@ export const environments = {
         frontend: process.env.SITE_URL ?? 'http://localhost:3000',
         admin: process.env.ADMIN_SITE_URL ?? 'http://localhost:3003',
         docs: process.env.DOCS_SITE_URL ?? 'http://localhost:7600',
-        websocket: process.env.ADMIN_API_URL ?? 'http://localhost:3002'
+        websocket: process.env.ADMIN_API_URL ?? 'http://localhost:3002',
+        esphome: process.env.ESPHOME_DASHBOARD_URL ?? 'http://localhost:6052/esphome'
     },
     prod: {
         api: process.env.API_URL ?? 'http://localhost:4001/',
@@ -13,6 +14,7 @@ export const environments = {
         frontend: process.env.SITE_URL ?? 'http://localhost:4000/',
         admin: process.env.ADMIN_SITE_URL ?? 'http://localhost:4003/',
         docs: process.env.DOCS_SITE_URL ?? 'http://localhost:7700/',
-        websocket: process.env.ADMIN_API_URL ?? 'http://localhost:4002/'
+        websocket: process.env.ADMIN_API_URL ?? 'http://localhost:4002/',
+        esphome: process.env.ESPHOME_DASHBOARD_URL ?? 'http://localhost:6052/esphome/'
     }
 }
