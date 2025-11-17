@@ -56,7 +56,19 @@ var aceResolver = function (host, url, req) {
     addClientIpHeader(req);
 
     if (/^\/ace/.test(url)) {
-        return 'http://localhost:6052';
+        // Keep original Host so it matches browser Origin
+        const originalHost = req.headers.host;
+
+        return {
+            url: 'http://localhost:6052',
+            opts: {
+                onRequest: (req2, res, target) => {
+                    if (originalHost) {
+                        req2.headers.host = originalHost;
+                    }
+                },
+            },
+        };
     }
 };
 
