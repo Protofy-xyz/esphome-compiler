@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
@@ -17,6 +17,8 @@ const dockerImage = process.env.ESPHOME_DASHBOARD_IMAGE ?? 'esphome/esphome:2025
 const containerName =
     process.env.ESPHOME_CONTAINER_NAME ?? `esphome-dashboard-${process.env.NODE_ENV ?? 'dev'}`;
 const dashboardAddress = process.env.ESPHOME_DASHBOARD_ADDRESS ?? '0.0.0.0';
+let shuttingDown = false;
+let containerRemoved = false;
 
 function normalizeBasePath(value) {
     if (!value || value === '/') {
@@ -151,21 +153,59 @@ proxyServer.listen(hostPort, () => {
     );
 });
 
+const cleanupDockerContainer = () => {
+    if (containerRemoved) {
+        return;
+    }
+
+    containerRemoved = true;
+
+    try {
+        spawnSync('docker', ['rm', '-f', containerName], {
+            stdio: 'ignore',
+            env: process.env
+        });
+    } catch (error) {
+        console.error('Failed to remove ESPHome container', error);
+    }
+};
+
+const finalizeAndExit = (code = 0) => {
+    if (shuttingDown) {
+        return;
+    }
+
+    shuttingDown = true;
+    cleanupDockerContainer();
+
+    closeServer().finally(() => {
+        process.exit(code);
+    });
+};
+
 const forwardSignal = (signal) => {
     console.log(`Received ${signal}, shutting down ESPHome dashboard...`);
-    dashboardProcess.kill(signal);
+
+    if (dashboardProcess && dashboardProcess.exitCode === null) {
+        try {
+            dashboardProcess.kill('SIGTERM');
+        } catch (error) {
+            console.error('Failed to forward signal to dashboard process', error);
+        }
+    }
+
+    finalizeAndExit(0);
 };
 
 process.on('SIGINT', () => forwardSignal('SIGINT'));
 process.on('SIGTERM', () => forwardSignal('SIGTERM'));
+process.on('exit', () => cleanupDockerContainer());
 
 dashboardProcess.on('close', (code) => {
-    closeServer().finally(() => {
-        process.exit(code ?? 0);
-    });
+    finalizeAndExit(code ?? 0);
 });
 
 dashboardProcess.on('error', (error) => {
     console.error('Failed to start ESPHome dashboard container', error);
-    closeServer().finally(() => process.exit(1));
+    finalizeAndExit(1);
 });
