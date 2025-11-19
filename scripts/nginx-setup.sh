@@ -21,7 +21,7 @@ fi
 
 # --- Ask for configuration ----------------------------------------------------
 
-read -rp "Enter server name (e.g. ton.protofy.xyz): " SERVER_NAME
+read -rp "Enter server name (e.g. compile.protofy.xyz): " SERVER_NAME
 if [[ -z "${SERVER_NAME}" ]]; then
   echo "Server name cannot be empty."
   exit 1
