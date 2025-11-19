@@ -35,7 +35,8 @@
     "test:protolib": "FORCE_COLOR=1 yarn workspace protolib test",
     "create-environment": "node copy.js",
     "fix": "manypkg fix",
-    "check-deps": "check-dependency-version-consistency ."
+    "check-deps": "check-dependency-version-consistency .",
+    "nginx-setup": "sudo bash scripts/nginx-setup.sh"
   },
   "resolutions": {
     "react": "^18.2.0",
