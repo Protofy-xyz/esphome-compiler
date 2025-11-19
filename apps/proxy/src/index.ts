@@ -52,27 +52,6 @@ var customResolver1 = function (host, url, req) {
 
 customResolver1['priority'] = 100;
 
-var aceResolver = function (host, url, req) {
-    addClientIpHeader(req);
-
-    if (/^\/ace/.test(url)) {
-        // Keep original Host so it matches browser Origin
-        const originalHost = req.headers.host;
-
-        return {
-            url: 'http://localhost:6053',
-            opts: {
-                onRequest: (req2, res, target) => {
-                    if (originalHost) {
-                        req2.headers.host = originalHost;
-                    }
-                },
-            },
-        };
-    }
-};
-
-aceResolver['priority'] = 99;
 
 var customResolver2 = function (host, url, req) {
     addClientIpHeader(req);
@@ -141,7 +120,6 @@ var proxy = new Redbird({
     },
     resolvers: [
         devResolver,
-        aceResolver,
         customResolver1,
         customResolver2,
         customResolver3,
