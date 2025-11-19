@@ -266,6 +266,10 @@ ${SSL_DHPARAM_LINE}
         proxy_pass http://127.0.0.1:${MAIN_APP_PORT};
         proxy_http_version 1.1;
 
+        # WebSocket support for main app (e.g. /websocket)
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "Upgrade";
+
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
