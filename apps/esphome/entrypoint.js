@@ -1,9 +1,12 @@
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const dotenv = require('dotenv');
 
 const repoRoot = path.resolve(__dirname, '../../');
 const configDir = path.join(repoRoot, 'data', 'esphome');
+
+dotenv.config({ path: path.join(repoRoot, '.env') });
 
 if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
