@@ -8,7 +8,7 @@ const nodeEnv = process.env.NODE_ENV ?? 'dev';
 
 const defaults = {
     ESPHOME_PORT: '6052',
-    ESPHOME_DASHBOARD_IMAGE: 'esphome/esphome:2025.3.3',
+    ESPHOME_DASHBOARD_IMAGE: 'esphome/esphome:2025.11.1',
     ESPHOME_DASHBOARD_ADDRESS: '0.0.0.0',
     ESPHOME_BIND_ADDRESS: '127.0.0.1'
 };
