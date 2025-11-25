@@ -13,7 +13,7 @@ if (!fs.existsSync(configDir)) {
 }
 
 const dashboardPort = Number(process.env.ESPHOME_PORT ?? 6052);
-const dockerImage = process.env.ESPHOME_DASHBOARD_IMAGE ?? 'esphome/esphome:2025.3.3';
+const dockerImage = process.env.ESPHOME_DASHBOARD_IMAGE ?? 'esphome/esphome:2025.11';
 const containerName =
     process.env.ESPHOME_CONTAINER_NAME ?? `esphome-dashboard-${process.env.NODE_ENV ?? 'dev'}`;
 const dashboardAddress = process.env.ESPHOME_DASHBOARD_ADDRESS ?? '0.0.0.0';
