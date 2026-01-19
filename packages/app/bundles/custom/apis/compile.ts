@@ -26,6 +26,7 @@ import path from "path";
 import Bull from "bull";
 
 const root = path.join(process.cwd(), "..", "..");
+const esphomeDataDir = path.join(root, "data", "esphome");
 const logger = getLogger();
 
 Protofy("type", "IOTRouter");
@@ -70,35 +71,55 @@ export default Protofy("code", async (app, context) => {
         async (code) => {
           if (code == 0) {
             context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code, deviceName: targetDevice}));
-            const fwOriginPath = '.esphome/build/'+ fileName + '/.pioenvs/' + targetDevice +'/firmware.factory.bin'
-            const fwDestinationPath = fileName + '.bin'
-            const elfOriginPath = '.esphome/build/'+ fileName + '/.pioenvs/' + targetDevice +'/firmware.elf'
-            const elfDestinationPath = fileName + '.elf'
-            context.os.spawn(
-              "cp",
-              [fwOriginPath, fwDestinationPath],
-              {
-                cwd: "../../data/esphome",
-                shell: true,
-              },
-              null,
-              null,
-              null,
-              null,
-            )
-            context.os.spawn(
-              "cp",
-              [elfOriginPath, elfDestinationPath],
-              {
-                cwd: "../../data/esphome",
-                shell: true,
-              },
-              null,
-              null,
-              null,
-              null,
-            )
-            resolve();
+            const buildDir = path.join(
+              esphomeDataDir,
+              ".esphome",
+              "build",
+              fileName,
+              ".pioenvs",
+              targetDevice
+            );
+
+            const copyIfExists = async (src: string, dst: string) => {
+              try {
+                await fs.promises.access(src, fs.constants.F_OK);
+                await fs.promises.copyFile(src, dst);
+                return true;
+              } catch {
+                return false;
+              }
+            };
+
+            try {
+              await copyIfExists(
+                path.join(buildDir, "firmware.factory.bin"),
+                path.join(esphomeDataDir, `${fileName}.bin`)
+              );
+
+              await copyIfExists(
+                path.join(buildDir, "firmware.elf"),
+                path.join(esphomeDataDir, `${fileName}.elf`)
+              );
+
+              const otaCopied = await copyIfExists(
+                path.join(buildDir, "firmware.bin"),
+                path.join(esphomeDataDir, `${fileName}.ota.bin`)
+              );
+
+              if (!otaCopied) {
+                context.topicPub(
+                  `device/compile/${compileSessionId}`,
+                  JSON.stringify({
+                    message: "OTA binary not found (expected firmware.ota.bin)",
+                    deviceName: targetDevice,
+                  })
+                );
+              }
+
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
           } else {
             context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code, deviceName: targetDevice}));
             reject(new Error("Can't compile device"));

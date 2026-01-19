@@ -25,6 +25,7 @@ import fs from 'fs'
 import path from "path";
 
 const root = path.join(process.cwd(), '..', '..')
+const esphomeDataDir = path.join(root, 'data', 'esphome')
 const logger = getLogger()
 
 Protofy("type", "IOTRouter")
@@ -48,13 +49,20 @@ export default Protofy("code", async (app, context) => {
         const targetDevice = req.params.targetDevice
         const compileSessionId = req.query.compileSessionId
         const fileName = targetDevice+"-"+compileSessionId
-        res.sendFile(fileName+".bin", {root: "../../data/esphome/" })
+        res.sendFile(fileName+".bin", {root: esphomeDataDir })
     });
 
     app.get("/api/v1/device/downloadElf/:targetDevice", async (req, res) => {
         const targetDevice = req.params.targetDevice
         const compileSessionId = req.query.compileSessionId
         const fileName = targetDevice+"-"+compileSessionId
-        res.sendFile(fileName+".elf", {root: "../../data/esphome/" })
+        res.sendFile(fileName+".elf", {root: esphomeDataDir })
+    });
+
+    app.get("/api/v1/device/downloadOta/:targetDevice", async (req, res) => {
+        const targetDevice = req.params.targetDevice
+        const compileSessionId = req.query.compileSessionId
+        const fileName = targetDevice+"-"+compileSessionId
+        res.sendFile(fileName+".ota.bin", {root: esphomeDataDir })
     });
 })
