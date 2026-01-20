@@ -50,6 +50,25 @@ export default Protofy("code", async (app, context) => {
 
   const maxConcurrentCompilations = 5;
 
+  const findExistingCompilationForDevice = async (targetDevice: string) => {
+    const [activeJobs, waitingJobs, delayedJobs] = await Promise.all([
+      compileQueue.getActive(),
+      compileQueue.getWaiting(),
+      compileQueue.getDelayed(),
+    ]);
+
+    const isSameDevice = (job: any) =>
+      job?.data?.targetDevice === targetDevice && job?.finishedOn == null;
+
+    const activeJob = activeJobs.find(isSameDevice);
+    if (activeJob) return { job: activeJob, status: "active" as const };
+
+    const queuedJob = [...waitingJobs, ...delayedJobs].find(isSameDevice);
+    if (queuedJob) return { job: queuedJob, status: "queued" as const };
+
+    return null;
+  };
+
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId } = job.data;
     const fileName = targetDevice + "-" + compileSessionId;
@@ -131,8 +150,28 @@ export default Protofy("code", async (app, context) => {
 
   app.get("/api/v1/device/compile/:targetDevice", async (req, res) => {
     const targetDevice = req.params.targetDevice;
-    const compileSessionId = req.query.compileSessionId;
+    const compileSessionId = String(req.query.compileSessionId ?? "");
+    if (!compileSessionId) {
+      res.status(400).send({
+        error: true,
+        message: "Missing compileSessionId",
+      });
+      return;
+    }
     try {
+      const existing = await findExistingCompilationForDevice(targetDevice);
+      if (existing) {
+        res.status(409).send({
+          status: "Compilation already running",
+          running: true,
+          deviceName: targetDevice,
+          existingSessionId: existing.job?.data?.compileSessionId,
+          existingJobId: existing.job?.id,
+          existingStatus: existing.status,
+        });
+        return;
+      }
+
       const job = await compileQueue.add({
         targetDevice: targetDevice,
         compileSessionId: compileSessionId
