@@ -66,7 +66,7 @@ PRIVKEY_PATH=""
 DHPARAM_PATH=""
 
 if [[ "${TLS_MODE}" == "1" ]]; then
-  # Let’s Encrypt directory
+  # Let's Encrypt directory
   CERT_DIR="/etc/letsencrypt/live/${SERVER_NAME}"
   FULLCHAIN_PATH="${CERT_DIR}/fullchain.pem"
   PRIVKEY_PATH="${CERT_DIR}/privkey.pem"
@@ -98,41 +98,42 @@ fi
 # --- TLS / certificate handling ----------------------------------------------
 
 if [[ "${TLS_MODE}" == "1" ]]; then
-  # Let’s Encrypt mode
-  if [[ -f "${FULLCHAIN_PATH}" && -f "${PRIVKEY_PATH}" ]]; then
-    echo
-    echo ">>> Existing Let's Encrypt certificates found for ${SERVER_NAME}:"
-    echo "      ${FULLCHAIN_PATH}"
-    echo "      ${PRIVKEY_PATH}"
-    echo ">>> Reusing existing certs (no new certbot call)."
+  # Let's Encrypt mode
+
+  # Remove all previous certbot certificates for this domain (including -0001, -0002, etc.)
+  # so certbot always creates a clean entry at the expected path.
+  echo
+  echo ">>> Removing previous Let's Encrypt certificates for ${SERVER_NAME} ..."
+  for cert_name in $(certbot certificates 2>/dev/null \
+      | grep "Certificate Name:" | awk '{print $3}'); do
+    case "${cert_name}" in
+      "${SERVER_NAME}" | "${SERVER_NAME}"-[0-9]*)
+        echo "    Deleting cert: ${cert_name}"
+        certbot delete --cert-name "${cert_name}" --non-interactive 2>/dev/null || true
+        ;;
+    esac
+  done
+  # Clean up any leftover live/archive/renewal dirs that certbot may have missed
+  rm -rf /etc/letsencrypt/live/${SERVER_NAME}    /etc/letsencrypt/live/${SERVER_NAME}-[0-9]*
+  rm -rf /etc/letsencrypt/archive/${SERVER_NAME} /etc/letsencrypt/archive/${SERVER_NAME}-[0-9]*
+  rm -f  /etc/letsencrypt/renewal/${SERVER_NAME}.conf /etc/letsencrypt/renewal/${SERVER_NAME}-[0-9]*.conf
+
+  echo ">>> Stopping nginx (if running) to allow certbot standalone on :80 ..."
+  systemctl stop nginx || true
+
+  echo ">>> Requesting fresh Let's Encrypt certificate for ${SERVER_NAME} ..."
+  if certbot certonly \
+      --standalone \
+      --preferred-challenges http \
+      -d "${SERVER_NAME}" \
+      -m "${EMAIL}" \
+      --agree-tos \
+      --non-interactive; then
+    echo ">>> Certificate obtained successfully."
   else
-    echo
-    echo ">>> Stopping nginx (if running) to allow certbot standalone on :80 ..."
-    systemctl stop nginx || true
-
-    echo ">>> Requesting/renewing Let's Encrypt certificate for ${SERVER_NAME} ..."
-    if certbot certonly \
-        --standalone \
-        --preferred-challenges http \
-        -d "${SERVER_NAME}" \
-        -m "${EMAIL}" \
-        --agree-tos \
-        --non-interactive; then
-      echo ">>> Certificate obtained (or renewed) successfully."
-    else
-      echo "!!! certbot failed."
-
-      if [[ -f "${FULLCHAIN_PATH}" && -f "${PRIVKEY_PATH}" ]]; then
-        echo ">>> However, existing certificate files were found:"
-        echo "      ${FULLCHAIN_PATH}"
-        echo "      ${PRIVKEY_PATH}"
-        echo ">>> Continuing using existing certs (likely hit a rate limit)."
-      else
-        echo ">>> No existing certificates found for ${SERVER_NAME}."
-        echo ">>> Cannot continue in Let's Encrypt mode. Please re-run and choose self-signed (option 2)."
-        exit 1
-      fi
-    fi
+    echo "!!! certbot failed. Cannot continue in Let's Encrypt mode."
+    echo ">>> Please re-run and choose self-signed (option 2)."
+    exit 1
   fi
 else
   # Self-signed mode
