@@ -118,7 +118,7 @@ if [[ "${TLS_MODE}" == "1" ]]; then
   rm -rf /etc/letsencrypt/archive/${SERVER_NAME} /etc/letsencrypt/archive/${SERVER_NAME}-[0-9]*
   rm -f  /etc/letsencrypt/renewal/${SERVER_NAME}.conf /etc/letsencrypt/renewal/${SERVER_NAME}-[0-9]*.conf
 
-  echo ">>> Stopping nginx (if running) to allow certbot standalone on :80 ..."
+  echo ">>> Stopping nginx (if running) to free port 80 for initial cert request ..."
   systemctl stop nginx || true
 
   echo ">>> Requesting fresh Let's Encrypt certificate for ${SERVER_NAME} ..."
@@ -134,6 +134,13 @@ if [[ "${TLS_MODE}" == "1" ]]; then
     echo "!!! certbot failed. Cannot continue in Let's Encrypt mode."
     echo ">>> Please re-run and choose self-signed (option 2)."
     exit 1
+  fi
+
+  # Switch authenticator to nginx so auto-renewal works without stopping nginx
+  RENEWAL_CONF="/etc/letsencrypt/renewal/${SERVER_NAME}.conf"
+  if [[ -f "${RENEWAL_CONF}" ]]; then
+    sed -i 's/authenticator = standalone/authenticator = nginx/' "${RENEWAL_CONF}"
+    echo ">>> Switched renewal authenticator to nginx for seamless auto-renewal."
   fi
 else
   # Self-signed mode
