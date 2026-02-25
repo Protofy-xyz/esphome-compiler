@@ -24,6 +24,7 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 import Bull from "bull";
+import { buildDir as resolveBuildDir, artifactName, compileMessage } from "./compilerPaths";
 
 const root = path.join(process.cwd(), "..", "..");
 const esphomeDataDir = path.join(root, "data", "esphome");
@@ -70,8 +71,11 @@ export default Protofy("code", async (app, context) => {
   };
 
   compileQueue.process(maxConcurrentCompilations, async (job) => {
-    const { targetDevice, compileSessionId } = job.data;
-    const fileName = targetDevice + "-" + compileSessionId;
+    const { targetDevice, compileSessionId, projectId, network } = job.data;
+    const fileName = artifactName(targetDevice, compileSessionId);
+
+    const pub = (payload: Record<string, unknown>) =>
+      context.topicPub(`device/compile/${compileSessionId}`, JSON.stringify(payload));
 
     return new Promise((resolve, reject) => {
       context.os.spawn(
@@ -82,22 +86,15 @@ export default Protofy("code", async (app, context) => {
           shell: true,
         },
         async (data) => {
-          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data, deviceName: targetDevice}));
+          pub(compileMessage({ message: data, deviceName: targetDevice }, network));
         },
         async (data) => {
-          context.topicPub('device/compile/'+compileSessionId, JSON.stringify({message: data, deviceName: targetDevice}));
+          pub(compileMessage({ message: data, deviceName: targetDevice }, network));
         },
         async (code) => {
           if (code == 0) {
-            context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code, deviceName: targetDevice}));
-            const buildDir = path.join(
-              esphomeDataDir,
-              ".esphome",
-              "build",
-              fileName,
-              ".pioenvs",
-              targetDevice
-            );
+            pub(compileMessage({ event: "exit", code: code, deviceName: targetDevice }, network));
+            const buildDirectory = resolveBuildDir(esphomeDataDir, targetDevice, compileSessionId, projectId);
 
             const copyIfExists = async (src: string, dst: string) => {
               try {
@@ -111,28 +108,25 @@ export default Protofy("code", async (app, context) => {
 
             try {
               await copyIfExists(
-                path.join(buildDir, "firmware.factory.bin"),
+                path.join(buildDirectory, "firmware.factory.bin"),
                 path.join(esphomeDataDir, `${fileName}.bin`)
               );
 
               await copyIfExists(
-                path.join(buildDir, "firmware.elf"),
+                path.join(buildDirectory, "firmware.elf"),
                 path.join(esphomeDataDir, `${fileName}.elf`)
               );
 
               const otaCopied = await copyIfExists(
-                path.join(buildDir, "firmware.bin"),
+                path.join(buildDirectory, "firmware.bin"),
                 path.join(esphomeDataDir, `${fileName}.ota.bin`)
               );
 
               if (!otaCopied) {
-                context.topicPub(
-                  `device/compile/${compileSessionId}`,
-                  JSON.stringify({
-                    message: "OTA binary not found (expected firmware.ota.bin)",
-                    deviceName: targetDevice,
-                  })
-                );
+                pub(compileMessage({
+                  message: "OTA binary not found (expected firmware.ota.bin)",
+                  deviceName: targetDevice,
+                }, network));
               }
 
               resolve();
@@ -140,7 +134,7 @@ export default Protofy("code", async (app, context) => {
               reject(e);
             }
           } else {
-            context.topicPub('device/compile/'+compileSessionId, JSON.stringify({event: "exit", code: code, deviceName: targetDevice}));
+            pub(compileMessage({ event: "exit", code: code, deviceName: targetDevice }, network));
             reject(new Error("Can't compile device"));
           }
         }
@@ -151,6 +145,8 @@ export default Protofy("code", async (app, context) => {
   app.get("/api/v1/device/compile/:targetDevice", async (req, res) => {
     const targetDevice = req.params.targetDevice;
     const compileSessionId = String(req.query.compileSessionId ?? "");
+    const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
+    const network = req.query.network ? String(req.query.network) : undefined;
     if (!compileSessionId) {
       res.status(400).send({
         error: true,
@@ -174,17 +170,17 @@ export default Protofy("code", async (app, context) => {
 
       const job = await compileQueue.add({
         targetDevice: targetDevice,
-        compileSessionId: compileSessionId
+        compileSessionId: compileSessionId,
+        projectId: projectId,
+        network: network,
       });
 
       context.topicPub(
         `device/compile/${compileSessionId}`,
-        JSON.stringify({
+        JSON.stringify(compileMessage({
           message: "Job added to queue",
-          position: jobOrder.length, // Approximate position
-          status: "queued",
           deviceName: targetDevice,
-        })
+        }, network))
       );
 
       res.status(202).send({ status: job, sessionId: compileSessionId });
@@ -224,11 +220,14 @@ export default Protofy("code", async (app, context) => {
 
   compileQueue.on("active", (job) => {
     // Optionally handle active jobs separately if needed
+    const msg = compileMessage({
+      message: "Job is now active",
+      deviceName: job.data.targetDevice,
+    }, job.data.network);
     context.topicPub(`device/compile/${job.data.compileSessionId}`, JSON.stringify({
-        message: "Job is now active",
+        ...msg,
         position: 1, // Active job is always at the front of the line
         status: "active",
-        deviceName: job.data.targetDevice,
       })
     );
   });
@@ -238,11 +237,14 @@ export default Protofy("code", async (app, context) => {
       const jobId = jobOrder[index];
       const job = await compileQueue.getJob(jobId);
       if (job && job.finishedOn==null) {
-        context.topicPub(`device/compile/${job.data.compileSessionId}`, JSON.stringify({
+        const msg = compileMessage({
           message: "Queue update",
+          deviceName: job.data.targetDevice,
+        }, job.data.network);
+        context.topicPub(`device/compile/${job.data.compileSessionId}`, JSON.stringify({
+          ...msg,
           position: index + 1 - maxConcurrentCompilations,  // Convert index to 1-based position
           status: 'queued',
-          deviceName: job.data.targetDevice,
         }));
       }
     }

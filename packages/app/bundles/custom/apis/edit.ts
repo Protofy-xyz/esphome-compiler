@@ -24,6 +24,7 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto"; // Import the crypto module for hashing
+import { buildPath, artifactName } from "./compilerPaths";
 
 const jsYaml = require("js-yaml");
 
@@ -54,7 +55,9 @@ export default Protofy("code", async (app, context) => {
     // Compute the compileSessionId based on the hash of the YAML content
     const hash = crypto.createHash("sha256").update(req.body.yaml).digest("hex");
     const compileSessionId = hash.substring(0, 16); // Use the first 16 characters of the hash as the ID
-    const fileName = req.params.targetDevice + "-" + compileSessionId;
+    const projectId = req.body.projectId as string | undefined;
+    const network = req.body.network as string | undefined;
+    const fileName = artifactName(req.params.targetDevice, compileSessionId);
 
     console.log(
       "🤖 ~ app.post ~ context.os.pathExists(esphomePath):",
@@ -85,16 +88,20 @@ export default Protofy("code", async (app, context) => {
     });
 
     const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
-    yamlObj.esphome.build_path = "build/" + fileName;
+    yamlObj.esphome.build_path = buildPath(req.params.targetDevice, compileSessionId, projectId);
     const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema })
 
     context.os.fileWriter(esphomePath + fileName + ".yaml", yamlContent, null);
+    const compilationData: Record<string, any> = {
+      id: compileSessionId,
+      done: false,
+    };
+    if (network) compilationData.network = network;
+    if (projectId) compilationData.projectId = projectId;
+
     context.object.create(
       "compilation",
-      {
-        id: compileSessionId,
-        done: false,
-      },
+      compilationData,
       null,
       async (item) =>
         context.object.list(

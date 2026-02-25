@@ -9,7 +9,9 @@ Protofy("features", {
 
 export const BaseCompilationSchema = Schema.object(Protofy("schema", {
     id: z.string().id(),
-	done: z.boolean(), 
+	done: z.boolean(),
+	network: z.string().optional(),
+	projectId: z.string().optional(),
 }))
 
 export const CompilationSchema = Schema.object({
