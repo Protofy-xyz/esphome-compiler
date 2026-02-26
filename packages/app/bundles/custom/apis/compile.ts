@@ -70,6 +70,10 @@ export default Protofy("code", async (app, context) => {
     return null;
   };
 
+  // Enable ccache for ESPHome/PlatformIO builds (if ccache is installed on the system)
+  process.env.CMAKE_C_COMPILER_LAUNCHER = "ccache";
+  process.env.CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
+
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId, projectId, network } = job.data;
     const fileName = artifactName(targetDevice, compileSessionId);
