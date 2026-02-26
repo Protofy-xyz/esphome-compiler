@@ -88,7 +88,9 @@ export default Protofy("code", async (app, context) => {
     });
 
     const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
-    yamlObj.esphome.build_path = buildPath(req.params.targetDevice, compileSessionId, projectId);
+    const resolvedBuildPath = buildPath(req.params.targetDevice, compileSessionId, projectId);
+    yamlObj.esphome.build_path = resolvedBuildPath;
+    console.log(`📦 build_path: ${resolvedBuildPath} | projectId: ${projectId ?? 'none'} | network: ${network ?? 'none'}`);
     const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema })
 
     context.os.fileWriter(esphomePath + fileName + ".yaml", yamlContent, null);

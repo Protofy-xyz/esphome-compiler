@@ -18,7 +18,9 @@ export function buildPath(
 
 /**
  * Resolves the PlatformIO build directory where compiled artifacts live.
- * Mirrors the logic of buildPath but returns an absolute filesystem path.
+ * Must match the build_path written into the YAML — ESPHome creates the
+ * PlatformIO project at {cwd}/{build_path}/, and firmware ends up in
+ * {build_path}/.pioenvs/{device}/.
  */
 export function buildDir(
   esphomeDataDir: string,

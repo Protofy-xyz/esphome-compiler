@@ -73,9 +73,36 @@ export default Protofy("code", async (app, context) => {
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId, projectId, network } = job.data;
     const fileName = artifactName(targetDevice, compileSessionId);
+    const buildDirectory = resolveBuildDir(esphomeDataDir, targetDevice, compileSessionId, projectId);
 
     const pub = (payload: Record<string, unknown>) =>
       context.topicPub(`device/compile/${compileSessionId}`, JSON.stringify(payload));
+
+    // --- DEBUG: estado del directorio de build ANTES de compilar ---
+    const compileStart = Date.now();
+    try {
+      const exists = fs.existsSync(buildDirectory);
+      console.log(`🔍 [PRE-COMPILE] buildDir: ${buildDirectory}`);
+      console.log(`🔍 [PRE-COMPILE] exists: ${exists}`);
+      if (exists) {
+        const files = fs.readdirSync(buildDirectory);
+        console.log(`🔍 [PRE-COMPILE] files in buildDir: ${files.join(', ')}`);
+      }
+      // Check parent .pioenvs dir for cached object files
+      const pioenvDir = path.dirname(buildDirectory);
+      if (fs.existsSync(pioenvDir)) {
+        const pioFiles = fs.readdirSync(pioenvDir);
+        console.log(`🔍 [PRE-COMPILE] files in .pioenvs/: ${pioFiles.join(', ')}`);
+      }
+      // Check build src dir for generated C++
+      const srcDir = path.join(path.dirname(path.dirname(buildDirectory)), "src");
+      if (fs.existsSync(srcDir)) {
+        const srcFiles = fs.readdirSync(srcDir);
+        console.log(`🔍 [PRE-COMPILE] src/ files: ${srcFiles.length} files`);
+      }
+    } catch (e) {
+      console.log(`🔍 [PRE-COMPILE] error listing: ${e.message}`);
+    }
 
     return new Promise((resolve, reject) => {
       context.os.spawn(
@@ -92,9 +119,21 @@ export default Protofy("code", async (app, context) => {
           pub(compileMessage({ message: data, deviceName: targetDevice }, network));
         },
         async (code) => {
+          const elapsed = ((Date.now() - compileStart) / 1000).toFixed(1);
+          console.log(`⏱️ [POST-COMPILE] exit code: ${code} | elapsed: ${elapsed}s | device: ${targetDevice} | projectId: ${projectId ?? 'none'}`);
+
           if (code == 0) {
             pub(compileMessage({ event: "exit", code: code, deviceName: targetDevice }, network));
-            const buildDirectory = resolveBuildDir(esphomeDataDir, targetDevice, compileSessionId, projectId);
+
+            // --- DEBUG: estado del directorio de build DESPUÉS de compilar ---
+            try {
+              const files = fs.existsSync(buildDirectory) ? fs.readdirSync(buildDirectory) : [];
+              console.log(`🔍 [POST-COMPILE] buildDir files: ${files.join(', ')}`);
+              console.log(`🔍 [POST-COMPILE] looking for firmware.factory.bin: ${fs.existsSync(path.join(buildDirectory, 'firmware.factory.bin'))}`);
+              console.log(`🔍 [POST-COMPILE] looking for firmware.bin: ${fs.existsSync(path.join(buildDirectory, 'firmware.bin'))}`);
+            } catch (e) {
+              console.log(`🔍 [POST-COMPILE] error listing: ${e.message}`);
+            }
 
             const copyIfExists = async (src: string, dst: string) => {
               try {
