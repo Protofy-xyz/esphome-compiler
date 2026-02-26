@@ -70,9 +70,11 @@ export default Protofy("code", async (app, context) => {
     return null;
   };
 
-  // Enable ccache for ESPHome/PlatformIO builds (if ccache is installed on the system)
-  process.env.CMAKE_C_COMPILER_LAUNCHER = "ccache";
-  process.env.CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
+  // Build acceleration: ccache + PlatformIO build cache (requires ccache installed)
+  // Symlinks in /usr/lib/ccache/ for xtensa-esp-elf-gcc etc. must exist on the host
+  process.env.PATH = "/usr/lib/ccache:" + (process.env.PATH || "");
+  process.env.IDF_CCACHE_ENABLE = "1";
+  process.env.PLATFORMIO_BUILD_CACHE_DIR = "/tmp/platformio-build-cache";
 
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId, projectId, network } = job.data;

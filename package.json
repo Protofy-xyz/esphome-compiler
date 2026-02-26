@@ -36,7 +36,8 @@
     "create-environment": "node copy.js",
     "fix": "manypkg fix",
     "check-deps": "check-dependency-version-consistency .",
-    "nginx-setup": "sudo bash scripts/nginx-setup.sh"
+    "nginx-setup": "sudo bash scripts/nginx-setup.sh",
+    "setup-ccache": "sudo bash scripts/setup-ccache.sh"
   },
   "resolutions": {
     "react": "^18.2.0",
