@@ -3,6 +3,7 @@ import {
   buildPath,
   buildDir,
   artifactName,
+  yamlFileName,
   compileMessage,
 } from "../packages/app/bundles/custom/apis/compilerPaths";
 
@@ -91,5 +92,28 @@ describe("artifact file name", () => {
     const name2 = artifactName("sensor", "deadbeef");
     expect(name1).toBe(name2);
     expect(name1).toBe("sensor-deadbeef");
+  });
+});
+
+describe("yaml file name", () => {
+  it("returns legacy name when no projectId", () => {
+    expect(yamlFileName("mydevice", "abc123")).toBe("mydevice-abc123");
+  });
+
+  it("returns stable name when projectId present", () => {
+    expect(yamlFileName("mydevice", "abc123", "proj1")).toBe("proj1-mydevice");
+  });
+
+  it("is stable across different sessionIds when projectId present", () => {
+    const name1 = yamlFileName("mydevice", "hash1", "proj1");
+    const name2 = yamlFileName("mydevice", "hash2", "proj1");
+    expect(name1).toBe(name2);
+    expect(name1).toBe("proj1-mydevice");
+  });
+
+  it("changes with sessionId when no projectId (legacy)", () => {
+    const name1 = yamlFileName("mydevice", "hash1");
+    const name2 = yamlFileName("mydevice", "hash2");
+    expect(name1).not.toBe(name2);
   });
 });

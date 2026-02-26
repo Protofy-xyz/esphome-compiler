@@ -24,7 +24,7 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto"; // Import the crypto module for hashing
-import { buildPath, artifactName } from "./compilerPaths";
+import { buildPath, artifactName, yamlFileName } from "./compilerPaths";
 
 const jsYaml = require("js-yaml");
 
@@ -57,7 +57,7 @@ export default Protofy("code", async (app, context) => {
     const compileSessionId = hash.substring(0, 16); // Use the first 16 characters of the hash as the ID
     const projectId = req.body.projectId as string | undefined;
     const network = req.body.network as string | undefined;
-    const fileName = artifactName(req.params.targetDevice, compileSessionId);
+    const yamlFile = yamlFileName(req.params.targetDevice, compileSessionId, projectId);
 
     console.log(
       "🤖 ~ app.post ~ context.os.pathExists(esphomePath):",
@@ -90,10 +90,10 @@ export default Protofy("code", async (app, context) => {
     const yamlObj = jsYaml.load(req.body.yaml, { schema: customSchema });
     const resolvedBuildPath = buildPath(req.params.targetDevice, compileSessionId, projectId);
     yamlObj.esphome.build_path = resolvedBuildPath;
-    console.log(`📦 build_path: ${resolvedBuildPath} | projectId: ${projectId ?? 'none'} | network: ${network ?? 'none'}`);
+    console.log(`📦 build_path: ${resolvedBuildPath} | yamlFile: ${yamlFile}.yaml | projectId: ${projectId ?? 'none'} | network: ${network ?? 'none'}`);
     const yamlContent = jsYaml.dump(yamlObj, { lineWidth: -1, schema: customSchema })
 
-    context.os.fileWriter(esphomePath + fileName + ".yaml", yamlContent, null);
+    context.os.fileWriter(esphomePath + yamlFile + ".yaml", yamlContent, null);
     const compilationData: Record<string, any> = {
       id: compileSessionId,
       done: false,

@@ -24,7 +24,7 @@ import { Application } from "express";
 import fs from "fs";
 import path from "path";
 import Bull from "bull";
-import { buildDir as resolveBuildDir, artifactName, compileMessage } from "./compilerPaths";
+import { buildDir as resolveBuildDir, artifactName, yamlFileName, compileMessage } from "./compilerPaths";
 
 const root = path.join(process.cwd(), "..", "..");
 const esphomeDataDir = path.join(root, "data", "esphome");
@@ -73,6 +73,7 @@ export default Protofy("code", async (app, context) => {
   compileQueue.process(maxConcurrentCompilations, async (job) => {
     const { targetDevice, compileSessionId, projectId, network } = job.data;
     const fileName = artifactName(targetDevice, compileSessionId);
+    const yamlFile = yamlFileName(targetDevice, compileSessionId, projectId);
     const buildDirectory = resolveBuildDir(esphomeDataDir, targetDevice, compileSessionId, projectId);
 
     const pub = (payload: Record<string, unknown>) =>
@@ -107,7 +108,7 @@ export default Protofy("code", async (app, context) => {
     return new Promise((resolve, reject) => {
       context.os.spawn(
         "esphome",
-        ["compile", fileName + ".yaml"],
+        ["compile", yamlFile + ".yaml"],
         {
           cwd: "../../data/esphome",
           shell: true,

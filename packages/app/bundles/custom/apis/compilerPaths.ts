@@ -61,6 +61,25 @@ export function artifactName(
 }
 
 /**
+ * YAML file name for ESPHome.
+ * - Legacy (no projectId): "{device}-{sessionId}" (changes with every YAML edit)
+ * - With projectId: "{projectId}-{device}" (stable across edits)
+ *
+ * Must be stable with projectId so ESPHome's storage.json (keyed by filename)
+ * persists between compilations, avoiding "Core config changed" clean.
+ */
+export function yamlFileName(
+  targetDevice: string,
+  compileSessionId: string,
+  projectId?: string
+): string {
+  if (projectId) {
+    return `${projectId}-${targetDevice}`;
+  }
+  return `${targetDevice}-${compileSessionId}`;
+}
+
+/**
  * Builds an MQTT message payload for compilation events.
  * Includes `network` only when provided (retrocompatibility with older Ventos).
  */
